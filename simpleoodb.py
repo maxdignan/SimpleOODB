@@ -103,7 +103,8 @@ def temp_add_account(dbName):
     address = os.getcwd()
     url = address + "/" + database + "/permissions"
     pickle.dump(out, open(url, "wb"))
-    return "YOUR MOM!"
+    return "Default account made user:root password:root database:entered database table:BLANK"
+
 def info():
     print("Welcome to Simple Object-Oriented Database!")
     print("This is an open source project with MIT License hosted on:")
@@ -111,10 +112,8 @@ def info():
     print("Originally created by: Max Dignan")
 
 class ConnectionOO:
-    def __init__(self, address, user, password):
+    def __init__(self, address):
         self.address = address
-        self.user = user
-        self.password = password
         self.allowed = False
     def allow(self):
         privy = login()
@@ -123,7 +122,7 @@ class ConnectionOO:
 
     def access_database(self, database):
         if self.allowed:
-            db = Database(self.address, self.user, self.password, database)
+            db = Database(self.address, database)
             return db
         else:
             self.allow()
@@ -144,10 +143,8 @@ class ConnectionOO:
             self.remove_db(dbName)
 
 class Database:
-    def __init__(self, address, user, password, database):
+    def __init__(self, address, database):
         self.address = address
-        self.user = user
-        self.password = password
         self.database = database
         self.allowed = False
     def allow(self):
@@ -156,14 +153,14 @@ class Database:
             self.allowed = True
     def access_other_db(self, newDatabase):
         if self.allowed:
-            db = Database(self.address, self.user, self.password, newDatabase)
+            db = Database(self.address, newDatabase)
             return db
         else:
             self.allow()
             self.access_other_db(newDatabase)
     def access_table(self, table):
         if self.allowed:
-            tb = Table(self.address, self.user, self.password, self.database, table)
+            tb = Table(self.address, self.database, table)
             return tb
         else:
             self.allow()
@@ -186,10 +183,8 @@ class Database:
             self.remove_table(tableName)
 
 class Table:
-    def __init__(self, address, user, password, database, table):
+    def __init__(self, address, database, table):
         self.address = address
-        self.user = user
-        self.password = password
         self.database = database
         self.table = table
         self.allowed = False
@@ -199,7 +194,7 @@ class Table:
             self.allowed = True
     def access_group(self, idNum):
         if self.allowed:
-            group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
+            group = Group(self.address, self.database, self.table, idNum)
             return group
         else:
             self.allow()
@@ -231,7 +226,7 @@ class Table:
             listOfGroups = self.list_groups()
             numberOfGroups = len(listOfGroups) + 1
             for indGroup in range(1,numberOfGroups):
-                group = Group(self.address, self.user, self.password, self.database, self.table, str(indGroup))
+                group = Group(self.address, self.database, self.table, str(indGroup))
                 group.add_category(categoryName)
         else:
             self.allow()
@@ -248,8 +243,8 @@ class Table:
             self.add_group()
     def swap_groups(self,firstIDNum,secondIDNum):
         if self.allowed:
-            firstGroup = Group(self.address, self.user, self.password, self.database, self.table, firstIDNum)
-            secondGroup = Group(self.address, self.user, self.password, self.database, self.table, secondIDNum)
+            firstGroup = Group(self.address, self.database, self.table, firstIDNum)
+            secondGroup = Group(self.address, self.database, self.table, secondIDNum)
             temp = firstGroup.access()
             firstGroup.update(secondGroup.access())
             secondGroup.update(temp)
@@ -263,7 +258,7 @@ class Table:
             allCats = []
             #make a copy of all cats from all groups to allcats
             for indGroup in range(1,numberOfGroups):
-                group = Group(self.address, self.user, self.password, self.database, self.table, str(indGroup))
+                group = Group(self.address, self.database, self.table, str(indGroup))
                 groupCats = group.access_categories()
                 a = groupCats
                 allCats.extend(a)
@@ -317,7 +312,7 @@ class Table:
                 groupNum = 0
                 while groupNum < numberOfGroups - 1:
                     groupNum += 1
-                    group = Group(self.address, self.user, self.password, self.database, self.table, str(groupNum))
+                    group = Group(self.address, self.database, self.table, str(groupNum))
                     print(group.get_value_by_category(catagor))
                 index += 1
                 print("-------")
@@ -326,10 +321,8 @@ class Table:
             self.list_values_by_category()
 
 class Group:
-    def __init__(self, address, user, password, database, table, idNum):
+    def __init__(self, address, database, table, idNum):
         self.address = address
-        self.user = user
-        self.password = password
         self.database = database
         self.table = table
         self.idNum = idNum
