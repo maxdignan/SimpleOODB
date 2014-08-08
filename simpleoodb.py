@@ -39,52 +39,52 @@ accessGranted = False
 
 def login():
     global accessGranted
-    if accessGranted:
-        return True
-    else:
-        user = input("Please enter your username: ")
-        password = input("Please enter your password: ")
-        database = input("Please enter the database you wish to access: ")
-        table = input("Please enter the table you wish to access: ")
-        address = os.getcwd()
-        url = address + "/" + database + "/permissions"
-        permissions = pickle.load(open(url,"rb"))
-        print(permissions)
-        numOfPerms = len(permissions)
-        pIndex = 0
-        allUsers = []
-        while pIndex < numOfPerms:
-            singlePerm = permissions[pIndex]
-            temp = singlePerm[0]
-            allUsers.append(temp)
-            pIndex += 1
-        #print(allUsers)
-        try:
-            indexOfAcct = allUsers.index(user)
-        except:
-            indexOfAcct = len(allUsers)
-        if indexOfAcct != len(allUsers):
-            password = str.encode(password)
-            hash = hashlib.sha512(password)
-            hash = hash.hexdigest()
-            hash.replace("a","ebc")
-            hash.replace("e","fbc")
-            acct = permissions[indexOfAcct]
-            if acct[1] == hash:
-                #print("password right")
-                if acct[2] == table:
-                    #print("right table")
-                    accessGranted = True
-                    return True
-                else:
-                    print("username, password, or table not correct")
-                    return False
+    #if accessGranted:
+    #    return True
+    #else:
+    user = input("Please enter your username: ")
+    password = input("Please enter your password: ")
+    database = input("Please enter the database you wish to access: ")
+    table = input("Please enter the table you wish to access: ")
+    address = os.getcwd()
+    url = address + "/" + database + "/permissions"
+    permissions = pickle.load(open(url,"rb"))
+    print(permissions)
+    numOfPerms = len(permissions)
+    pIndex = 0
+    allUsers = []
+    while pIndex < numOfPerms:
+        singlePerm = permissions[pIndex]
+        temp = singlePerm[0]
+        allUsers.append(temp)
+        pIndex += 1
+    #print(allUsers)
+    try:
+        indexOfAcct = allUsers.index(user)
+    except:
+        indexOfAcct = len(allUsers)
+    if indexOfAcct != len(allUsers):
+        password = str.encode(password)
+        hash = hashlib.sha512(password)
+        hash = hash.hexdigest()
+        hash.replace("a","ebc")
+        hash.replace("e","fbc")
+        acct = permissions[indexOfAcct]
+        if acct[1] == hash:
+            #print("password right")
+            if acct[2] == table:
+                #print("right table")
+                accessGranted = True
+                return True
             else:
                 print("username, password, or table not correct")
                 return False
         else:
             print("username, password, or table not correct")
             return False
+    else:
+        print("username, password, or table not correct")
+        return False
 
 def temp_add_account(dbName):
     user = "root"
