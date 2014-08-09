@@ -223,7 +223,7 @@ class ConnectionOO:
             return db
         else:
             self.allow(database)
-            self.access_database(database)
+            return self.access_database(database)
     def make_new_db(self, dbName):
         url = self.address + "/" + dbName
         if not os.path.exists(url):
@@ -257,14 +257,14 @@ class Database:
             return db
         else:
             self.allow()
-            self.access_other_db(newDatabase)
+            return self.access_other_db(newDatabase)
     def access_table(self, table):
         if self.allowed:
             tb = Table(self.address, self.user, self.password, self.database, table)
             return tb
         else:
             self.allow()
-            self.access_table(table)
+            return self.access_table(table)
     def make_new_table(self, tableName):
         if self.allowed:
             url = self.address + "/" + self.database + "/" + tableName
@@ -300,37 +300,50 @@ class Table:
             return group
         else:
             self.allow()
-            self.access_group(idNum)
+            return self.access_group(idNum)
     ##find number of groups
+    def add_value_by_category(self, idNum, category, newValue):
+        if self.allowed:
+            group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
+            group.edit_value(category,newValue)
+        else:
+            self.allow()
+            self.add_value_by_category(idNum, category, newValue)
 
     def access_value(self, idNum, category):
-        maxLength = len(self.list_groups())
-        if idNum <= maxLength:
-            group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
-            return group.get_value_by_category(category)
+        if self.allowed:
+            maxLength = len(self.list_groups())
+            if idNum <= maxLength:
+                group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
+                return group.get_value_by_category(category)
+            else:
+                print("index out of range, don't worry nothing was accessed")
         else:
-            print("index out of range, don't worry nothing was accessed")
+            self.allow()
+            return self.access_value(idNum, category)
 
     def list_groups(self):
         if self.allowed:
-            currDir = os.getcwd()
+            #currDir = os.getcwd()
             #print(currDir)
-            url = currDir + "/" + self.database + "/" + self.table
+            trash = 0
+            url = self.address + "/" + self.database + "/" + self.table
             os.chdir(url)
             a = []
             for path,dirs,files in os.walk('.'):
                 for fn in files:
                     b = [os.path.join(path,fn)]
                     a.extend(b)
-            os.chdir(currDir)
+            os.chdir(self.address)
             try:
                 del a[a.index(".\\desktop.ini")]
             except:
-                print("you may manually want to remove any non-group-data files from table in file system (don't forget hidden(maybe))... sorry")
+                trash += 1
+                #print("you may manually want to remove any non-group-data files from table in file system (don't forget hidden(maybe))... sorry")
             return a
         else:
             self.allow()
-            self.list_groups()
+            return self.list_groups()
     ##add functionality to add category to each group
     def add_category_to_all_groups(self, categoryName):
         if self.allowed:
@@ -362,19 +375,27 @@ class Table:
         else:
             self.allow()
             self.swap_groups(firstIDNum,secondIDNum)
+
     def list_all_categories(self):
         if self.allowed:
             listOfGroups = self.list_groups()
-            numberOfGroups = len(listOfGroups) + 1
+            numberOfGroups = len(listOfGroups)
+            #print(len(listOfGroups))
             allCats = []
             #make a copy of all cats from all groups to allcats
-            for indGroup in range(1,numberOfGroups):
-                group = Group(self.address, self.user, self.password, self.database, self.table, str(indGroup))
-                groupCats = group.access_categories()
-                a = groupCats
+            x = 1
+            while x <= numberOfGroups:
+                gr = Group(self.address, self.user, self.password, self.database, self.table, str(x))
+                a = gr.access_categories()
+                #print(type(a))
+                #print(a)
                 allCats.extend(a)
+                #print(allCats)
+                #allCats.append(a)
+                x += 1
+            #print(allCats)
             index = 0
-            while index < len(allCats):
+            while index < len(allCats) - 1:
                 temp = allCats[index]
                 inindex = index + 1
                 while inindex < len(allCats):
@@ -386,15 +407,16 @@ class Table:
             return allCats
         else:
             self.allow()
-            self.list_all_categories()
+            return self.list_all_categories()
     ##remove group
     def remove_group(self, idNum):
         if self.allowed:
             print("Note: Restart all Group instances!")
-            currDir = os.getcwd()
+            #currDir = os.getcwd()
             listOfGroups = self.list_groups()
             numberOfGroups = len(listOfGroups)
-            idNum = int(idNum) - 1
+            idNum = int(idNum)
+            #print(idNum)
             index = idNum
             while True:
                 if index < numberOfGroups:
@@ -402,10 +424,10 @@ class Table:
                     index += 1
                 else:
                     break
-            url = currDir + "/" + self.database + "/" + self.table
+            url = self.address + "/" + self.database + "/" + self.table
             os.chdir(url)
             os.remove(str(numberOfGroups))
-            os.chdir(currDir)
+            os.chdir(self.address)
         else:
             self.allow()
             self.remove_group(idNum)
@@ -430,6 +452,20 @@ class Table:
         else:
             self.allow()
             self.print_values_by_category()
+    def list_values_of_category(self, category):
+        if self.allowed:
+            out = []
+            groupNum = 1
+            listOfGroups = self.list_groups()
+            numberOfGroups = len(listOfGroups)
+            while groupNum <= numberOfGroups:
+                group = Group(self.address, self.user, self.password, self.database, self.table, str(groupNum))
+                out.append(group.get_value_by_category(category))
+                groupNum += 1
+            return out
+        else:
+            self.allow()
+            return self.list_values_of_category(category)
 
 class Group:
     def __init__(self, address, user, password, database, table, idNum):
@@ -450,7 +486,7 @@ class Group:
             return pickle.load(open(url,"rb"))
         else:
             self.allow()
-            self.access()
+            return self.access()
     def update(self, obj):
         if self.allowed:
             url = self.address + "/" + self.database + "/" + self.table + "/" + self.idNum
@@ -462,10 +498,12 @@ class Group:
         if self.allowed:
             group = self.access()
             catas = group[0]
+            #print(type(catas))
+            #print(catas)
             return catas
         else:
             self.allow()
-            self.access_categories()
+            return self.access_categories()
     def access_values(self):
         if self.allowed:
             group = self.access()
@@ -473,7 +511,7 @@ class Group:
             return values
         else:
             self.allow()
-            self.access_values()
+            return self.access_values()
     def get_value_by_category(self, category):
         if self.allowed:
             cats = self.access_categories()
@@ -485,7 +523,7 @@ class Group:
             return values[index]
         else:
             self.allow()
-            self.get_value_by_category(category)
+            return self.get_value_by_category(category)
     def add_category(self, cataName):
         if self.allowed:
             cats = self.access_categories()
