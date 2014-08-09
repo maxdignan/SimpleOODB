@@ -5,29 +5,34 @@ import pickle
 import os
 import shutil
 import hashlib
+import uuid
 
-def connect(address, user, password):
-    connection =  ConnectionOO(address, user, password)
+def connect(address,user,password):
+    connection =  ConnectionOO(address,user,password)
     return connection
 
 def add_account_to_database_for_table():
-    print("Login to another valid user in this database....")
-    privy = login()
+    currUser = input("Enter a current username: ")
+    currPass = input("Enter that accounts password: ")
+    currDatabase = input("Enter a valid database for this account: ")
+    privy = login_db(currUser,currPass, currDatabase)
     if(privy):
         user = input("Please enter your new username: ")
         password = input("Please enter your new password: ")
         database = input("Please enter the database you wish to access: ")
         table = input("Please enter the table you wish to access: ")
-        password = str.encode(password)
-        hash = hashlib.sha512(password)
-        hash = hash.hexdigest()
+        salt = uuid.uuid4().hex
+        #password = str.encode(password)
+        hash = hashlib.sha512(salt.encode() + password.encode()).hexdigest() + ":" + salt
+        #print(type(hash))
+        #print(hash)
         address = os.getcwd()
         url = address + "/" + database + "/permissions"
         permissions = pickle.load(open(url,"rb"))
         #print(type(hash))
-        hash.replace("a","ebc")
-        hash.replace("e","fbc")
-        permissionForNew = [user,hash,table]
+        #hash.replace("a","ebc")
+        #hash.replace("e","fbc")
+        permissionForNew = [user,hash,database,table]
         permissions.append(permissionForNew)
         pickle.dump(permissions, open(url, "wb"))
         #return "YOUR MOM!"
@@ -64,15 +69,12 @@ def login():
     except:
         indexOfAcct = len(allUsers)
     if indexOfAcct != len(allUsers):
-        password = str.encode(password)
-        hash = hashlib.sha512(password)
-        hash = hash.hexdigest()
-        hash.replace("a","ebc")
-        hash.replace("e","fbc")
         acct = permissions[indexOfAcct]
+        encpassword, salt = acct[1].split(":")
+        hash = hashlib.sha512(salt.encode() + password.encode()).hexdigest() + ":" + salt
         if acct[1] == hash:
             #print("password right")
-            if acct[2] == table:
+            if acct[3] == table:
                 #print("right table")
                 accessGranted = True
                 return True
@@ -86,19 +88,112 @@ def login():
         print("username, password, or table not correct")
         return False
 
+def login_db(user, password, dbName):
+    global accessGranted
+    #if accessGranted:
+    #    return True
+    #else:
+    address = os.getcwd()
+    url = address + "/" + dbName + "/permissions"
+    permissions = pickle.load(open(url,"rb"))
+    #print(permissions)
+    numOfPerms = len(permissions)
+    pIndex = 0
+    allUsers = []
+    while pIndex < numOfPerms:
+        singlePerm = permissions[pIndex]
+        temp = singlePerm[0]
+        allUsers.append(temp)
+        pIndex += 1
+    #print(allUsers)
+    try:
+        indexOfAcct = allUsers.index(user)
+    except:
+        indexOfAcct = len(allUsers)
+    if indexOfAcct != len(allUsers):
+        acct = permissions[indexOfAcct]
+        encpassword, salt = acct[1].split(":")
+        hash = hashlib.sha512(salt.encode() + password.encode()).hexdigest() + ":" + salt
+        if acct[1] == hash:
+            #print("password right")
+            if acct[2] == dbName:
+                #print("correct db")
+                #print("right table")
+                #accessGranted = True
+                return True
+            else:
+                print("incorrect db")
+        else:
+            print("username, password, or table not correct")
+            return False
+    else:
+        print("username, password, or table not correct")
+        return False
+
+def login_table(user, password, dbName, tableName):
+    global accessGranted
+    #if accessGranted:
+    #    return True
+    #else:
+    address = os.getcwd()
+    url = address + "/" + dbName + "/permissions"
+    permissions = pickle.load(open(url,"rb"))
+    #print(permissions)
+    numOfPerms = len(permissions)
+    pIndex = 0
+    allUsers = []
+    while pIndex < numOfPerms:
+        singlePerm = permissions[pIndex]
+        temp = singlePerm[0]
+        allUsers.append(temp)
+        pIndex += 1
+    #print(allUsers)
+    try:
+        indexOfAcct = allUsers.index(user)
+    except:
+        indexOfAcct = len(allUsers)
+    if indexOfAcct != len(allUsers):
+        acct = permissions[indexOfAcct]
+        encpassword, salt = acct[1].split(":")
+        hash = hashlib.sha512(salt.encode() + password.encode()).hexdigest() + ":" + salt
+        if acct[1] == hash:
+            #print("password right")
+            if acct[2] == dbName:
+                #print("correct db")
+                if acct[3] == tableName:
+                    #print("right table")
+                    #accessGranted = True
+                    return True
+                else:
+                    print("username, password, or table not correct")
+                    return False
+            else:
+                print("incorrect db")
+                print(acct[2])
+                print(dbName)
+                return False
+        else:
+            print("username, password, or table not correct")
+            return False
+    else:
+        print("username, password, or table not correct")
+        return False
+
+
 def temp_add_account(dbName):
     user = "root"
     password = 'root'
     database = dbName
     table = ""
-    password = str.encode(password)
-    hash = hashlib.sha512(password)
-    hash = hash.hexdigest()
+    salt = uuid.uuid4().hex
+    hash = hashlib.sha512(salt.encode() + password.encode()).hexdigest() + ":" + salt
+    #print(type(hash))
+    #print(hash)
     out = ["hi"]
-    print(type(hash))
-    hash.replace("a","ebc")
-    hash.replace("e","fbc")
-    permissions = [user,hash,table]
+    #print(type(hash))
+    #hash.replace("a","ebc")
+    #hash.replace("e","fbc")
+    permissions = [user, hash, database, table]
     out[0] = permissions
     address = os.getcwd()
     url = address + "/" + database + "/permissions"
@@ -112,20 +207,22 @@ def info():
     print("Originally created by: Max Dignan")
 
 class ConnectionOO:
-    def __init__(self, address):
+    def __init__(self, address, user, password):
         self.address = address
+        self.user = user
+        self.password = password
         self.allowed = False
-    def allow(self):
-        privy = login()
+    def allow(self, uniqueForThisdbName):
+        privy = login_db(self.user,self.password,uniqueForThisdbName)
         if privy:
             self.allowed = True
 
     def access_database(self, database):
         if self.allowed:
-            db = Database(self.address, database)
+            db = Database(self.address, self.user, self.password, database)
             return db
         else:
-            self.allow()
+            self.allow(database)
             self.access_database(database)
     def make_new_db(self, dbName):
         url = self.address + "/" + dbName
@@ -133,34 +230,37 @@ class ConnectionOO:
             os.makedirs(url)
             temp_add_account(dbName)
         else: print("already used name, call again")
-    def remove_db(self, dbName):
+
+
+class Database:
+    def __init__(self, address, user, password, database):
+        self.address = address
+        self.user = user
+        self.password = password
+        self.database = database
+        self.allowed = False
+    def allow(self):
+        privy = login_db(self.user, self.password, self.database)
+        if privy:
+            self.allowed = True
+    def remove_db(self):
         if self.allowed:
-            url = self.address + "/" + dbName
+            url = self.address + "/" + self.database
             if os.path.exists(url):shutil.rmtree(url)
             else: print("database doesn't exist, call again")
         else:
             self.allow()
-            self.remove_db(dbName)
-
-class Database:
-    def __init__(self, address, database):
-        self.address = address
-        self.database = database
-        self.allowed = False
-    def allow(self):
-        privy = login()
-        if privy:
-            self.allowed = True
+            self.remove_db()
     def access_other_db(self, newDatabase):
         if self.allowed:
-            db = Database(self.address, newDatabase)
+            db = Database(self.address, self.user, self.password, newDatabase)
             return db
         else:
             self.allow()
             self.access_other_db(newDatabase)
     def access_table(self, table):
         if self.allowed:
-            tb = Table(self.address, self.database, table)
+            tb = Table(self.address, self.user, self.password, self.database, table)
             return tb
         else:
             self.allow()
@@ -183,23 +283,34 @@ class Database:
             self.remove_table(tableName)
 
 class Table:
-    def __init__(self, address, database, table):
+    def __init__(self, address, user, password, database, table):
         self.address = address
+        self.user = user
+        self.password = password
         self.database = database
         self.table = table
         self.allowed = False
     def allow(self):
-        privy = login()
+        privy = login_table(self.user, self.password, self.database, self.table)
         if privy:
             self.allowed = True
     def access_group(self, idNum):
         if self.allowed:
-            group = Group(self.address, self.database, self.table, idNum)
+            group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
             return group
         else:
             self.allow()
             self.access_group(idNum)
     ##find number of groups
+
+    def access_value(self, idNum, category):
+        maxLength = len(self.list_groups())
+        if idNum <= maxLength:
+            group = Group(self.address, self.user, self.password, self.database, self.table, idNum)
+            return group.get_value_by_category(category)
+        else:
+            print("index out of range, don't worry nothing was accessed")
+
     def list_groups(self):
         if self.allowed:
             currDir = os.getcwd()
@@ -226,7 +337,7 @@ class Table:
             listOfGroups = self.list_groups()
             numberOfGroups = len(listOfGroups) + 1
             for indGroup in range(1,numberOfGroups):
-                group = Group(self.address, self.database, self.table, str(indGroup))
+                group = Group(self.address, self.user, self.password, self.database, self.table, str(indGroup))
                 group.add_category(categoryName)
         else:
             self.allow()
@@ -243,8 +354,8 @@ class Table:
             self.add_group()
     def swap_groups(self,firstIDNum,secondIDNum):
         if self.allowed:
-            firstGroup = Group(self.address, self.database, self.table, firstIDNum)
-            secondGroup = Group(self.address, self.database, self.table, secondIDNum)
+            firstGroup = Group(self.address, self.user, self.password, self.database, self.table, firstIDNum)
+            secondGroup = Group(self.address, self.user, self.password, self.database, self.table, secondIDNum)
             temp = firstGroup.access()
             firstGroup.update(secondGroup.access())
             secondGroup.update(temp)
@@ -258,7 +369,7 @@ class Table:
             allCats = []
             #make a copy of all cats from all groups to allcats
             for indGroup in range(1,numberOfGroups):
-                group = Group(self.address, self.database, self.table, str(indGroup))
+                group = Group(self.address, self.user, self.password, self.database, self.table, str(indGroup))
                 groupCats = group.access_categories()
                 a = groupCats
                 allCats.extend(a)
@@ -299,7 +410,7 @@ class Table:
             self.allow()
             self.remove_group(idNum)
     ##list all by category
-    def list_values_by_category(self):
+    def print_values_by_category(self):
         if self.allowed:
             cats = self.list_all_categories()
             index = 0
@@ -312,23 +423,25 @@ class Table:
                 groupNum = 0
                 while groupNum < numberOfGroups - 1:
                     groupNum += 1
-                    group = Group(self.address, self.database, self.table, str(groupNum))
+                    group = Group(self.address, self.user, self.password, self.database, self.table, str(groupNum))
                     print(group.get_value_by_category(catagor))
                 index += 1
                 print("-------")
         else:
             self.allow()
-            self.list_values_by_category()
+            self.print_values_by_category()
 
 class Group:
-    def __init__(self, address, database, table, idNum):
+    def __init__(self, address, user, password, database, table, idNum):
         self.address = address
+        self.user = user
+        self.password = password
         self.database = database
         self.table = table
         self.idNum = idNum
         self.allowed = False
     def allow(self):
-        privy = login()
+        privy = login_table(self.user, self.password, self.database, self.table)
         if privy:
             self.allowed = True
     def access(self):
