@@ -1,5 +1,5 @@
-In order to use Simple Object-Oriented Database, move the simpleoodb.py file to the directory of the program you wish to use it in
+In order to use Simple Object-Oriented Database, move the simpleoodb.py file to the Lib folder in your Python 34 distribution.
 Then use "import simpleoodb" in your python file to import it's capabilities - and that's it, have fun!
 
 
-Do note: when you make a new db, the default login is user: 'root', password: 'root', database: the name of the database you just made, table: '' (no value for table)
+Do note: when you make a new db, the default login is user: 'root', password: 'root', database: the name of the database you just made, table: 'whatever you gave it' (change login info by making new account, then deleting root)
