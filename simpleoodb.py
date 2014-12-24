@@ -12,11 +12,28 @@ import pickle
 
 
 def connect(table, username, password):
+    address = os.getcwd()
+    url = address + "/" + table
+    try:
+        handle = pickle.load(open(url, "rb"))
+    except:
+        print('INVALID ENTRY')
+    users = handle[0]
+    index = 0
+    enterred_pass = password
+    for ind in users:
+        if username == ind[0]:
+            if hash_password(password, ind[1]) == ind[1]:
+                password = hash_password(password, ind[1])
+                break
+        index += 1
+
+
     table = Table(table, username, password)
-    if table.permit():
+    if table.permit() and not enterred_pass == password:
         return table
     else:
-        print('incorrect information')
+        print('INCORRECT INFORMATION')
 
 
 # makes new table, will give original permissions to user: root
@@ -25,11 +42,15 @@ def connect(table, username, password):
 def make_new_table(tablename):
     salt = uuid.uuid4().hex
     root = 'root'
-    hash = hashlib.sha512(salt.encode() + root.encode()).hexdigest() + ":" + salt
+    hash = hashlib.sha512(salt.encode() + root.encode()).hexdigest() + "<<<>>>" + salt
     table = Table(tablename, 'root', hash)
     table.commit()
     print(r"Table '" + tablename + "' created with username 'root' and password 'root'")
 
+def hash_password(plainText, encoded):
+    salt = encoded.split('<<<>>>')[1]
+    hash = hashlib.sha512(salt.encode() + plainText.encode()).hexdigest() + "<<<>>>" + salt
+    return hash
 
 class Table:
     def __init__(self, tablename, currentUser, currentPassword):
@@ -39,36 +60,38 @@ class Table:
         self.tableName = tablename
         self.users = [[currentUser, currentPassword]]
         self.data = [[]]
-        self.privy = False
+        self.first_load = True
 
 	# checks table permissions
-	def permit(self):
-		address = os.getcwd()
-		url = address + "/" + self.tableName
-		handle = pickle.load(open(url, "rb"))
-		users = handle[0]
-		length = len(users)
-		index = 0
-		while index < length:
-			userHandle = users[index]
-			if self.currentUser == userHandle[0]:
-				hashedPassword, salt = userHandle[1].split(":")
-				hash = hashlib.sha512(salt.encode() + self.currentPassword.encode()).hexdigest() + ":" + salt
-				if userHandle[1] == hash:
-					return True
-			index += 1
-		return False
+    def permit(self):
+        address = os.getcwd()
+        url = address + "/" + self.tableName
+        handle = pickle.load(open(url, "rb"))
+        users = handle[0]
+        length = len(users)
+        index = 0
+        while index < length:
+            userHandle = users[index]
+            if self.currentUser == userHandle[0]:
+                if userHandle[1] == self.currentPassword:
+                    if self.first_load:
+                        self.data = handle[1]
+                        self.users = users
+                        self.first_load = False
+                    return True
+            index += 1
+        return False
 
-    # loads data for this session from specified table
-    def load(self):
+    def dump(self,csv_file):
         if self.permit():
-			self.users = users
-			self.data = handle[1]
-			self.privy = True
+            import csv
+            with open(csv_file, 'w', newline='') as fp:
+                a = csv.writer(fp, delimiter=',')
+                obj = [self.users, self.data]
+                a.writerows(obj)
 
     # commits adjusted data into file
     def commit(self):
-        if self.permit():
             address = os.getcwd()
             url = address + "/" + self.tableName
             obj = [self.users, self.data]
@@ -88,7 +111,7 @@ class Table:
     def add_user(self, newUser, newPassword):
         if self.permit():
             salt = uuid.uuid4().hex
-            hash = hashlib.sha512(salt.encode() + newPassword.encode()).hexdigest() + ":" + salt
+            hash = hashlib.sha512(salt.encode() + newPassword.encode()).hexdigest() + "<<<>>>" + salt
             tempObject = [newUser, hash]
             self.users.append(tempObject)
             print(r"username: '" + newUser + "' and password: '" + newPassword + "' added to table")
