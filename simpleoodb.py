@@ -1,6 +1,20 @@
 #!C:/Python34/python
 __author__ = 'Max Dignan'
 
+
+
+#
+#
+# This file is open sourced under the MIT License
+# Original Author: Max Dignan
+#
+# This block must be kept in any, and all, future iterations
+# as defined by the MIT License
+#
+#
+#
+
+
 import hashlib
 import uuid
 import os
@@ -18,6 +32,7 @@ def connect(table, username, password):
         handle = pickle.load(open(url, "rb"))
     except:
         print('INVALID ENTRY')
+        handle = []
     users = handle[0]
     index = 0
     enterred_pass = password
@@ -82,12 +97,15 @@ class Table:
             index += 1
         return False
 
+    def length(self):
+        return len(self.data)
+
     def dump(self,csv_file):
         if self.permit():
             import csv
             with open(csv_file, 'w', newline='') as fp:
                 a = csv.writer(fp, delimiter=',')
-                obj = [self.users, self.data]
+                obj = self.data
                 a.writerows(obj)
 
     # commits adjusted data into file
